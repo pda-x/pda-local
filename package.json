@@ -1,0 +1,15 @@
+{
+  "name": "pda-app",
+  "private": "true",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "lerna run start:dev,dev --parallel --stream --concurrency=5",
+    "build:dev": "lerna run build --parallel --stream --concurrency=5 && pm2 start ecosystem.config.js --env development",
+    "build:prod": "lerna run build --parallel --stream --concurrency=5 && pm2 start ecosystem.config.js --env production"
+  },
+  "devDependencies": {
+    "lerna": "latest"
+  }
+}

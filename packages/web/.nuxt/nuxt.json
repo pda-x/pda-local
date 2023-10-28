@@ -1,0 +1,9 @@
+{
+  "_hash": "MWZRAgJr9P",
+  "project": {
+    "rootDir": "/root/pda-app/packages/web"
+  },
+  "versions": {
+    "nuxt": "3.8.0"
+  }
+}
