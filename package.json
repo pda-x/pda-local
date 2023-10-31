@@ -1,5 +1,5 @@
 {
-  "name": "pda-app",
+  "name": "pda-local",
   "private": "true",
   "workspaces": [
     "packages/*"

@@ -30,7 +30,6 @@ if (env.NODE_ENV === 'production') {
           port: parseInt(env.REDIS_PORT) || config.get('REDIS_PORT') || 6379,
           db: parseInt(env.REDIS_DB) || config.get('REDIS_DB') || 0,
           password: env.REDIS_PASSWORD || config.get('REDIS_PASSWORD') || '',
-          keyPrefix: 'pda:',
         }),
       }),
     }),

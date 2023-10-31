@@ -1,7 +1,7 @@
 {
-  "_hash": "MWZRAgJr9P",
+  "_hash": "IU7Zgn1y60",
   "project": {
-    "rootDir": "/root/pda-app/packages/web"
+    "rootDir": "/root/pda-local/packages/web"
   },
   "versions": {
     "nuxt": "3.8.0"

@@ -1,54 +1,87 @@
-import { Inject, Injectable } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { FileDto } from './dto/file.dto';
 import * as fs from 'fs';
-import { ConfigService } from '@nestjs/config';
+import * as path from 'path';
 import * as shell from 'shelljs';
-import { getFileSize } from 'util/util';
+import { AppConfig } from 'src/interface/AppConfig';
+import { AppInfo } from 'src/interface/AppInfo';
+import { R } from 'src/util/res';
+import * as _ from 'lodash';
+import { getFileSize } from 'src/util/util';
 
 @Injectable()
 export class AppService {
   constructor(
     @Inject(CACHE_MANAGER) private readonly redis: Cache,
-    private readonly configService: ConfigService,
+    private readonly log: Logger,
   ) {}
 
-  async handleUpload(param: FileDto) {
-    switch (param.type) {
-      case 'ipa':
-        const ipaFile = this.configService.get('ipaPath') + '/' + param.file.originalname;
+  async handleUpload(file: Express.Multer.File) {
+    const originalName = file.originalname;
 
-        fs.writeFileSync(ipaFile, param.file.buffer);
-
-        const appSize = getFileSize(param.file.size);
-
-        // 解析ipa信息   版本
-        shell.exec(`unzip ${ipaFile} -d ${this.configService.get('tmpPath')}/ipa`);
-        // info.plist
-        const infoPlistStr = shell.exec(`plistutil -i ${this.configService.get('tmpPath')}/ipa/Payload/*.app/Info.plist -f json`);
-
-        console.log('====> ipa Info.plist解析内容: ', infoPlistStr);
-
-        const infoPlist = JSON.parse(infoPlistStr);
-
-        const appName = infoPlist.CFBundleDisplayName;
-        const appVersion = infoPlist.CFBundleShortVersionString;
-        const appIdentifier = infoPlist.CFBundleIdentifier;
-
-        // todo logo保存到oss
-        const logoPath = shell.exec(`ls -S ${this.configService.get('tmpPath')}/ipa/Payload/*.app/${infoPlist.CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName}*.pnp |head -n 1`);
-        console.log('====> ipa logo path: ', logoPath);
-
-        break;
-      case 'apk':
-        break;
+    if (path.extname(originalName) !== '.ipa') {
     }
+
+    const fileName = crypto.randomUUID().replaceAll('-', ''); // 重命名文件
+    const config: AppConfig = await this.redis.get('pda:config');
+
+    const ipaFile = config.ipaPath + '/' + fileName + '.ipa';
+
+    fs.writeFileSync(ipaFile, file.buffer);
+
+    const appSize: string = getFileSize(file.size);
+
+    // 解析ipa信息
+    shell.exec(`unzip ${ipaFile} -d ${config.tmpPath}/ipa`);
+
+    // info.plist
+    const infoPlistStr = shell.exec(`plistutil -i ${config.tmpPath}/ipa/Payload/*.app/Info.plist -f json`);
+
+    this.log.log('====> ipa Info.plist解析内容: ' + infoPlistStr);
+
+    const infoPlist = JSON.parse(infoPlistStr);
+
+    const appName: string = infoPlist.CFBundleDisplayName;
+    const appVersion: string = infoPlist.CFBundleShortVersionString;
+    const appIdentifier: string = infoPlist.CFBundleIdentifier;
+
+    // todo logo保存到 本地 or oss
+    const logoPath = shell.exec(`ls -S ${config.tmpPath}/ipa/Payload/*.app/${infoPlist.CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName}*.png |head -n 1`).replace('\n', '');
+    this.log.log('====> ipa logo path: ' + logoPath);
+
+    const appInfo: AppInfo = {
+      fileName,
+      appName,
+      appSize,
+      appVersion,
+      appIdentifier,
+      logo: logoPath,
+    };
+
+    await this.redis.set(`pda:ipa:${fileName}`, appInfo);
 
     // 清除tmp临时文件
 
-    shell.rm(this.configService.get('tmpPath') + '/*');
+    shell.exec(`rm -rf ${config.tmpPath}/*`);
 
-    return null;
+    return R.success({
+      fileName,
+      ...appInfo,
+    });
+  }
+
+  async list() {
+    const apps: Array<string> = await this.redis.store.keys('pda:ipa:*');
+
+    const task = async (item: string) => {
+      return await this.redis.get(item);
+    };
+
+    const res = await Promise.all(_.map(apps, task));
+
+    console.log(res);
+
+    return R.success(res);
   }
 }

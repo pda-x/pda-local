@@ -1,13 +1,20 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Controller, Get, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AppService } from './app.service';
-import { FileDto } from './dto/file.dto';
 
 @Controller('app')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Post('/upload')
-  async upload(@Body() param: FileDto) {
-    return this.appService.handleUpload(param);
+  @UseInterceptors(FileInterceptor('file'))
+  upload(@UploadedFile() file: Express.Multer.File) {
+    // 上传文件  解析app信息
+    return this.appService.handleUpload(file);
+  }
+
+  @Get('/list')
+  async list() {
+    return await this.appService.list();
   }
 }
