@@ -6,6 +6,7 @@ module.exports = {
       script: "dist/main.js",
       watch: true,
       exec_mode: "cluster",
+      instances: 1,
       env: {
         NODE_ENV: "development",
       },
@@ -15,12 +16,14 @@ module.exports = {
     },
     {
       name: "web",
-      script: "./.output/server/index.mjs",
+      script: "serve",
       cwd: "./packages/web",
       watch: true,
-      exec_mode: "cluster",
       env: {
-        port: 80,
+        PM2_SERVE_PATH: '.',
+        PM2_SERVE_SPA: 'true',
+        PM2_SERVE_HOMEPAGE: './index.html',
+        PM2_SERVE_PORT: 80
       },
     },
   ],

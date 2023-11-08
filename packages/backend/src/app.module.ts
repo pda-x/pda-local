@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
-import * as process from 'process';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AppModule as AppxModule } from './app/app.module';
 import { CacheModule } from '@nestjs/cache-manager';
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ioRedisStore } from '@tirke/node-cache-manager-ioredis';
+import * as process from 'process';
+import { AppModule as AppxModule } from './app/app.module';
+import { ConfigModule as ConfigxModule } from './config/config.module';
 
 // 系统环境变量优先级最高
 const env = process.env;
@@ -34,6 +35,8 @@ if (env.NODE_ENV === 'production') {
       }),
     }),
     AppxModule,
+    ConfigModule,
+    ConfigxModule,
   ],
 })
 export class AppModule {}
